@@ -1,0 +1,50 @@
+{
+  "name": "TBD at publish gate",
+  "description": "Orca ADE server: run Claude Code, Codex and more in parallel worktrees",
+  "workspaceId": "fc4796db-2c6c-4354-a564-d4a1d900af53",
+  "templateId": "8229a738-6b5c-420a-8f88-f2dfe1831f66",
+  "sourceProject": "ddc9307d-5584-491e-b2b4-175df38e5253",
+  "icon": "https://raw.githubusercontent.com/stablyai/orca/98584332a31acc0c0d60115edf03486068a35987/resources/icon.png",
+  "upstream": {
+    "repository": "https://github.com/stablyai/orca",
+    "version": "v1.4.210",
+    "commit": "98584332a31acc0c0d60115edf03486068a35987",
+    "$note": "Upstream ships desktop packages only (AppImage/deb/rpm/dmg/exe), no server image. Its documented headless path is `orca serve` from the extracted AppImage (docs/reference/headless-linux-server.md), which is what the image wraps."
+  },
+  "positioning": {
+    "$note": "The bare slug /deploy/orca is held by Paul Zarudnev's template (0 deploys, created 2026-09-15). It builds a Dockerfile from GitHub on every deploy (slow first boot) and ships no agent CLIs, only node+npm. Ours is a prebuilt GHCR image with Claude Code, Codex, gh, git, build-essential, ripgrep preinstalled, and a documented browser-only pairing flow."
+  },
+  "policy": {
+    "$note": "tosscreen CLEAR. Who receives unrequested traffic? Nobody: the server only accepts clients holding its pairing credential (device token + E2EE key). Anonymous visitors to the domain get a 'paste a pairing URL' screen. Outbound traffic is whatever the deployer's own agents do in their own repos, with their own subscriptions."
+  },
+  "topology": {
+    "$note": "Single service, single volume at /data. Orca's state (device registry, E2EE key, projects, settings) lives under HOME=/data/home, so pairing and cloned repos survive redeploys. Verified: fresh deploy -> new container hostname, same paired browser reconnects, project still there."
+  },
+  "services": {
+    "orca": {
+      "image": "ghcr.io/hmseeb/orca-railway:1.4.210",
+      "build": "Dockerfile in this repo, built + smoke-tested + pushed by .github/workflows/image.yml (amd64 only; Railway is amd64)",
+      "startCommand": null,
+      "startCommandNote": "Deliberately unset. Railway execs a start command raw and discards ENTRYPOINT; the image relies on tini (PID 1, reaps agent/PTY children) and orca-boot (chowns the root-owned volume, drops to the non-root orca user via setpriv, derives the pairing address).",
+      "healthcheckPath": "/",
+      "healthcheckNote": "orca serve's HTTP listener serves the bundled web client; / maps to web-index.html with 200, no auth needed. Boot to ready is ~20s.",
+      "restartPolicy": "ON_FAILURE x10",
+      "volume": "/data",
+      "domain": { "targetPort": 6768 },
+      "variables": {
+        "PORT": { "value": "6768", "$note": "Pinned so Railway's injected PORT and the domain target port agree. orca-boot passes it as --port." },
+        "ORCA_PAIRING_ADDRESS": {
+          "value": "",
+          "optional": true,
+          "$note": "Empty -> orca-boot advertises https://$RAILWAY_PUBLIC_DOMAIN, which Orca normalizes to wss:// with implicit 443 (Railway's edge). Without --pairing-address Orca advertises ws://127.0.0.1:<port> and remote clients cannot connect. Set only for a custom domain."
+        }
+      }
+    }
+  },
+  "findings": [
+    "Orca binds 0.0.0.0 (IPv4) and has no bind flag in serve mode; Railway's public edge and healthchecker reach it fine. Private-network (IPv6) access would not work, but nothing needs it.",
+    "Without gh the UI shows a 'GitHub CLI is not installed' banner and loses PR/issue/check views; gh is in the image.",
+    "The pairing credential prints on every boot in deploy logs as 'Web client URL' and 'Pairing URL'. Observed: after a claimed URL, the next boot mints a new device token, but already-paired clients keep working across restarts.",
+    "Upstream's noisy dbus errors and an opencode-binder 'SQLite database does not exist' stack trace appear on every boot; both are harmless."
+  ]
+}
