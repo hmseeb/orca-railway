@@ -1,0 +1,22 @@
+#!/bin/sh
+# Railway volumes mount root-owned; fix ownership once, then drop to `orca`
+# (upstream runs non-root so Chromium's sandbox and agent CLIs behave).
+set -eu
+home="${ORCA_HOME:-/data/home}"
+mkdir -p "$home/.npm-global"
+[ "$(stat -c %U "$home")" = orca ] || chown -R orca:orca "$home"
+
+# Advertise the public URL as a full https:// URL: Orca normalizes it to wss://
+# and keeps the port implicit (443), which is what Railway's edge serves.
+addr="${ORCA_PAIRING_ADDRESS:-}"
+[ -z "$addr" ] && [ -n "${RAILWAY_PUBLIC_DOMAIN:-}" ] && addr="https://$RAILWAY_PUBLIC_DOMAIN"
+
+set -- /opt/orca/squashfs-root/AppRun serve --port "${PORT:-6768}"
+[ -n "$addr" ] && set -- "$@" --pairing-address "$addr"
+
+cd "$home"
+exec setpriv --reuid=orca --regid=orca --init-groups \
+  env HOME="$home" USER=orca LOGNAME=orca \
+      NPM_CONFIG_PREFIX="$home/.npm-global" \
+      PATH="$home/.npm-global/bin:$home/.local/bin:$PATH" \
+  "$@" ${ORCA_EXTRA_ARGS:-}
