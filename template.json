@@ -1,5 +1,5 @@
 {
-  "name": "TBD at publish gate",
+  "name": "Orca ADE", "slug": "orca-ade",
   "description": "Orca ADE server: run Claude Code, Codex and more in parallel worktrees",
   "workspaceId": "fc4796db-2c6c-4354-a564-d4a1d900af53",
   "templateId": "8229a738-6b5c-420a-8f88-f2dfe1831f66",

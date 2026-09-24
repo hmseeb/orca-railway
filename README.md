@@ -2,7 +2,7 @@
 
 Railway image for [Orca](https://github.com/stablyai/orca)'s remote runtime (`orca serve`): the agent development environment for running Claude Code, Codex and other CLI agents in parallel worktrees, reachable from a browser, the Orca desktop app, or the Orca mobile app.
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/TBD)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/orca-ade)
 
 ## What is in the image
 
