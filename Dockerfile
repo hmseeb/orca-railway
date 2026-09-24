@@ -10,9 +10,11 @@ ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Package list is the upstream Ubuntu 24.04 (t64) list, plus the tools agents
-# expect in a dev box: git, ssh, build-essential, ripgrep, python3.
+# expect in a dev box: git, gh (Orca shows PRs, issues and checks through it;
+# without it the UI warns "GitHub CLI is not installed"), ssh, build-essential,
+# ripgrep, python3.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      curl file jq xvfb xauth ca-certificates git openssh-client \
+      curl file jq xvfb xauth ca-certificates git gh openssh-client \
       libgtk-3-0t64 libnss3 libatk1.0-0t64 libatk-bridge2.0-0t64 libgbm1 libasound2t64 \
       libxtst6 libcups2t64 libdrm2 libxkbcommon0 libpango-1.0-0 libcairo2 libatspi2.0-0t64 \
       libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libxrender1 libx11-xcb1 \
