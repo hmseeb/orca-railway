@@ -1,9 +1,9 @@
 {
-  "name": "Orca ADE", "slug": "orca-ade",
+  "name": "Orca ADE",
+  "slug": "orca-ade",
   "description": "Orca ADE server: run Claude Code, Codex and more in parallel worktrees",
   "workspaceId": "fc4796db-2c6c-4354-a564-d4a1d900af53",
   "templateId": "8229a738-6b5c-420a-8f88-f2dfe1831f66",
-  "sourceProject": "ddc9307d-5584-491e-b2b4-175df38e5253",
   "icon": "https://raw.githubusercontent.com/stablyai/orca/98584332a31acc0c0d60115edf03486068a35987/resources/icon.png",
   "upstream": {
     "repository": "https://github.com/stablyai/orca",
@@ -30,9 +30,14 @@
       "healthcheckNote": "orca serve's HTTP listener serves the bundled web client; / maps to web-index.html with 200, no auth needed. Boot to ready is ~20s.",
       "restartPolicy": "ON_FAILURE x10",
       "volume": "/data",
-      "domain": { "targetPort": 6768 },
+      "domain": {
+        "targetPort": 6768
+      },
       "variables": {
-        "PORT": { "value": "6768", "$note": "Pinned so Railway's injected PORT and the domain target port agree. orca-boot passes it as --port." },
+        "PORT": {
+          "value": "6768",
+          "$note": "Pinned so Railway's injected PORT and the domain target port agree. orca-boot passes it as --port."
+        },
         "ORCA_PAIRING_ADDRESS": {
           "value": "",
           "optional": true,
@@ -46,5 +51,8 @@
     "Without gh the UI shows a 'GitHub CLI is not installed' banner and loses PR/issue/check views; gh is in the image.",
     "The pairing credential prints on every boot in deploy logs as 'Web client URL' and 'Pairing URL'. Observed: after a claimed URL, the next boot mints a new device token, but already-paired clients keep working across restarts.",
     "Upstream's noisy dbus errors and an opencode-binder 'SQLite database does not exist' stack trace appear on every boot; both are harmless."
-  ]
+  ],
+  "regeneration": {
+    "$note": "orca-source was deleted 2026-09-25. repair.py writes the full config straight to template 8229a738 via templateUpsertConfig and is the regeneration master, same as relay_template.py for orca-ade-w-relay."
+  }
 }
