@@ -57,10 +57,15 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { stopping = true
 
 // ---- device registry ---------------------------------------------------------------------
 const readDevices = () => { try { return JSON.parse(readFileSync(REGISTRY, 'utf8')) } catch { return [] } }
-function removeDevice(deviceId) {
+function keepDevices(keep) {
   if (!existsSync(REGISTRY)) return
-  writeFileSync(REGISTRY, JSON.stringify(readDevices().filter((d) => d.deviceId !== deviceId)), { mode: 0o600 })
+  writeFileSync(REGISTRY, JSON.stringify(readDevices().filter(keep)), { mode: 0o600 })
 }
+const removeDevice = (deviceId) => keepDevices((d) => d.deviceId !== deviceId)
+// Orca reuses an unused link (lastSeenAt === 0) on every start and mints a new one
+// only when none is left (device-registry.ts getOrCreatePendingDevice). Dropping the
+// unused ones therefore yields a fresh link without signing anyone out.
+const dropUnusedLinks = () => keepDevices((d) => d.lastSeenAt !== 0)
 const qrSvg = (text) => execFileSync('qrencode', ['-t', 'SVG', '-m', '0', '-o', '-', text], { encoding: 'utf8' })
 
 // ---- page --------------------------------------------------------------------------------
@@ -84,7 +89,7 @@ function page(notice) {
 <p class="mut">Both carry a credential. Anyone holding them can use this server, so share them only with your own devices.</p>
 </div></div></div>`
   const rows = devices.length ? `<table><tr><th>Link</th><th>Created</th><th>Last used</th><th></th></tr>${devices.map((d) => `<tr>
-<td>${esc(d.name)}${d.deviceId === current?.deviceId ? ' <span class="ok">current</span>' : ''}<div class="mut">${esc(d.scope)} access</div></td>
+<td>${esc(d.name)}${d.deviceId === current?.deviceId ? ' <span class="ok">current link</span>' : ''}<div class="mut">${d.lastSeenAt ? 'in use' : 'not used yet'} · ${esc(d.scope)} access</div></td>
 <td>${esc(ago(d.pairedAt))}</td><td>${esc(ago(d.lastSeenAt))}</td>
 <td><form class="inline" method="post" action="/control/revoke"><input type="hidden" name="id" value="${esc(d.deviceId)}"><button class="danger">Revoke</button></form></td></tr>`).join('')}</table>`
     : '<p class="mut">Nothing paired yet.</p>'
@@ -92,8 +97,8 @@ function page(notice) {
 <div class="row">${RELAY_URL ? `<a href="${esc(RELAY_URL)}/admin">Relay admin</a>` : ''}<a href="/control/logout">Sign out</a></div></nav>
 ${notice ? `<div class="card ok">${esc(notice)}</div>` : ''}
 ${access}
-<div class="card"><h2>Pairing links</h2><p class="mut">Every device that used a link shares that link's entry. Revoking one disconnects those devices and restarts Orca for a few seconds; agents keep running.</p>${rows}
-<form method="post" action="/control/rotate" style="margin-top:12px"><button class="ghost">New link (revokes the current one)</button></form></div>
+<div class="card"><h2>Pairing links</h2><p class="mut">Each row is one link. Every device that signed in with it shares that row, so revoking it signs all of them out. Revoking or making a new link restarts Orca for a few seconds.</p>${rows}
+<form method="post" action="/control/rotate" style="margin-top:12px"><button class="ghost">New link</button> <span class="mut">Devices already signed in stay signed in.</span></form></div>
 ${RELAY_URL ? `<div class="card"><h2>Your own computers</h2><p class="mut">This server needs no relay: every device reaches it directly. The relay is for Orca running on computers you own, so your phone reaches them from anywhere. Setup commands are on the <a href="${esc(RELAY_URL)}/admin">relay admin page</a>.</p></div>` : ''}`)
 }
 
@@ -107,11 +112,11 @@ const server = createServer(async (req, res) => {
       if (req.method === 'POST') {
         const id = new URLSearchParams(await readBody(req)).get('id')
         const action = url.pathname.slice('/control/'.length)
-        if (action === 'rotate' && ready?.pairing?.deviceId) await withOrcaStopped(() => removeDevice(ready.pairing.deviceId))
+        if (action === 'rotate') await withOrcaStopped(dropUnusedLinks)
         else if (action === 'revoke' && id) await withOrcaStopped(() => removeDevice(id))
         return redirect(res, `/control?done=${action}`)
       }
-      const done = { rotate: 'New link created. The old one no longer works.', revoke: 'Revoked. Devices using that link are disconnected.' }[url.searchParams.get('done')]
+      const done = { rotate: 'New link created. The previous link no longer signs in new devices; devices already signed in are unaffected.', revoke: 'Revoked. Devices using that link are disconnected.' }[url.searchParams.get('done')]
       return send(res, 200, page(done))
     }
     return proxyHttp(req, res, ORCA_PORT)
