@@ -1,5 +1,10 @@
 # Orca on Railway
 
+Two published templates share this repo:
+
+- **Orca ADE**: one service, Orca on Railway. [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/orca-ade)
+- **Orca ADE (w/ Relay)**: Orca plus a password-protected control page, and your own Orca relay for computers you own. [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/orca-ade-w-relay) Listing: [TEMPLATE_OVERVIEW_RELAY.md](TEMPLATE_OVERVIEW_RELAY.md); design notes: [relay-template.json](relay-template.json); config master: `relay_template.py`.
+
 Railway image for [Orca](https://github.com/stablyai/orca)'s remote runtime (`orca serve`): the agent development environment for running Claude Code, Codex and other CLI agents in parallel worktrees, reachable from a browser, the Orca desktop app, or the Orca mobile app.
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/orca-ade)
