@@ -227,7 +227,7 @@ function adminPage(notice) {
 <button class="${h.blocked ? 'ghost' : 'danger'}">${h.blocked ? 'Unblock' : 'Disconnect and block'}</button></form></td></tr>`).join('')}</table>`
     : '<p class="mut">No computers have connected yet.</p>'
   return shell('Orca relay', `<nav><div><h1>Orca relay</h1><p class="sub" style="margin:0">${esc(ORIGIN)}</p></div>
-<div class="row">${ORCA_URL ? `<a href="${esc(ORCA_URL)}/control">Orca server control</a>` : ''}<a href="/admin/logout">Sign out</a></div></nav>
+<div class="row">${ORCA_URL ? `<a href="${esc(ORCA_URL)}/control">Orca control panel</a>` : ''}<a href="/admin/logout">Sign out</a></div></nav>
 ${notice ? `<div class="card ok">${esc(notice)}</div>` : ''}
 <div class="card"><h2>Connected computers</h2>${table}</div>
 ${connectInstructions()}

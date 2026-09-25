@@ -15,7 +15,9 @@ docker run -d --name "$name" -p 18080:8080 -v "$vol:/data" -e PORT=8080 -e ORCA_
   -e ORCA_PAIRING_ADDRESS=$B -e GIT_USER_NAME="Test User" "$img" >/dev/null
 for _ in $(seq 1 90); do [ "$(curl -s -o /dev/null -w '%{http_code}' $B/control/health)" = 200 ] && break; sleep 2; done
 [ "$(curl -s -o /dev/null -w '%{http_code}' $B/control/health)" = 200 ] || fail "never healthy"; ok "healthy"
-curl -s $B/ | grep -qi "<html" || fail "/ not proxied to Orca"; ok "web client proxied"
+[ "$(curl -s -o /dev/null -w '%{redirect_url}' $B/)" = "$B/control" ] || fail "/ does not lead to the control panel"; ok "/ redirects to /control"
+curl -s $B/web-index.html | grep -qi "<html" || fail "web client not proxied"; ok "web client proxied"
+docker logs "$name" 2>&1 | grep -q "Control panel: $B/control" || fail "control panel URL not in logs"; ok "control panel URL in logs"
 docker logs "$name" 2>&1 | grep -q "orca://pair" && fail "pairing credential in logs"; ok "no credential in logs"
 curl -s $B/control | grep -q 'type="password"' || fail "control not gated"; ok "control gated"
 [ "$(curl -s -o /dev/null -w '%{http_code}' -d password=nope $B/control/login)" = 401 ] || fail "wrong password accepted"

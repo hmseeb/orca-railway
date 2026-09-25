@@ -37,7 +37,7 @@ The Railway server does not use the relay. It already has a public address, so e
 - `GIT_USER_NAME` and `GIT_USER_EMAIL`: the name on commits made on the server. They default to "Orca" if left empty, so project creation works right away.
 - `GH_TOKEN`: a GitHub token. If set, `gh` and `git push` work immediately. Otherwise run `gh auth login` in an Orca terminal and approve the code at github.com/login/device from any device.
 
-**2. Open your Orca server.** Go to the orca service's URL followed by `/control` and enter your password. You get:
+**2. Open your control panel.** Click the orca service's URL in Railway (or add `/control` to it) and enter your password. You get:
 
 - **A browser link.** Open it on any device to get the full Orca interface, already signed in.
 - **A QR code and pairing code** for the Orca desktop and mobile apps.

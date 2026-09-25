@@ -31,7 +31,7 @@ RELAY_VARS = {
     "PORT": var("8080", "Port the relay, sign-in and admin page listen on. Matches the domain's target port."),
     # No default on purpose: the deployer has to know it to open /control and /admin
     # and to sign computers in, so it is the one required field on the deploy form.
-    "ORCA_PASSWORD": var(None, "Choose a password. It protects the Orca control page, the relay admin page, and signing computers in to the relay."),
+    "ORCA_PASSWORD": var(None, "Choose a password. After deploying, open the orca service's URL: it takes you to your control panel (sign-in link, QR code, devices). Sign in there with this password. It also protects the relay admin page."),
     "ORCA_URL": var("https://${{orca.RAILWAY_PUBLIC_DOMAIN}}", "Link from the relay admin to the Orca control page."),
 }
 

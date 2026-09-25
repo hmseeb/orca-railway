@@ -16,7 +16,7 @@ const HOME = process.env.HOME
 const REGISTRY = `${HOME}/.config/orca/orca-devices.json`
 const RELAY_URL = process.env.RELAY_URL?.replace(/\/$/, '')
 const PAIRING_ADDRESS = process.env.ORCA_PAIRING_ADDRESS || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '')
-const gate = passwordGate({ password: process.env.ORCA_PASSWORD, basePath: '/control', title: 'Orca server' })
+const gate = passwordGate({ password: process.env.ORCA_PASSWORD, basePath: '/control', title: 'Orca control panel' })
 
 // ---- orca serve supervision -------------------------------------------------------------
 let orca = null, ready = null, stopping = false, onExit = null
@@ -81,7 +81,7 @@ function page(notice) {
 <div class="row" style="align-items:flex-start;gap:24px">
 <div class="qr" title="Scan with the Orca mobile app: Pair Desktop">${qrSvg(current.url)}</div>
 <div style="flex:1;min-width:260px">
-<p><b>Any browser</b> (laptop, phone, tablet): open this link. It signs that browser in.</p>
+<p><b>Any browser</b> (laptop, phone, tablet): open this link once to sign that browser in. Afterwards bookmark <code>${esc(PAIRING_ADDRESS)}/web-index.html</code>; this page is always at <code>${esc(PAIRING_ADDRESS)}/control</code>.</p>
 <pre id="web">${esc(current.webClientUrl)}</pre>
 <div class="row"><a href="${esc(current.webClientUrl)}" target="_blank"><button>Open Orca</button></a><button class="ghost" onclick="copyText('web',this)">Copy link</button></div>
 <p style="margin-top:18px"><b>Orca desktop or mobile app</b>: scan the QR code, or paste this pairing code.</p>
@@ -93,7 +93,7 @@ function page(notice) {
 <td>${esc(ago(d.pairedAt))}</td><td>${esc(ago(d.lastSeenAt))}</td>
 <td><form class="inline" method="post" action="/control/revoke"><input type="hidden" name="id" value="${esc(d.deviceId)}"><button class="danger">Revoke</button></form></td></tr>`).join('')}</table>`
     : '<p class="mut">Nothing paired yet.</p>'
-  return shell('Orca server', `<nav><div><h1>Orca server</h1><p class="sub" style="margin:0">${esc(PAIRING_ADDRESS)}</p></div>
+  return shell('Orca control panel', `<nav><div><h1>Orca control panel</h1><p class="sub" style="margin:0">${esc(PAIRING_ADDRESS)}</p></div>
 <div class="row">${RELAY_URL ? `<a href="${esc(RELAY_URL)}/admin">Relay admin</a>` : ''}<a href="/control/logout">Sign out</a></div></nav>
 ${notice ? `<div class="card ok">${esc(notice)}</div>` : ''}
 ${access}
@@ -106,6 +106,10 @@ ${RELAY_URL ? `<div class="card"><h2>Your own computers</h2><p class="mut">This 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x')
   try {
+    // The service URL Railway shows the deployer opens here: send them to the
+    // control panel instead of Orca's bare "paste a pairing URL" screen. Orca's
+    // web client lives at /web-index.html and never navigates to /.
+    if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) return redirect(res, '/control')
     if (url.pathname === '/control/health') return send(res, ready ? 200 : 503, ready ? 'ok' : 'starting', 'text/plain')
     if (url.pathname === '/control' || url.pathname.startsWith('/control/')) {
       if (await gate.handle(req, res, url)) return
@@ -126,4 +130,8 @@ const server = createServer(async (req, res) => {
   }
 })
 server.on('upgrade', (req, socket, head) => proxyUpgrade(req, socket, head, ORCA_PORT))
-server.listen(PORT, '::', () => { console.log(`[control] listening on ${PORT}`); startOrca() })
+server.listen(PORT, '::', () => {
+  console.log(`[control] listening on ${PORT}`)
+  if (PAIRING_ADDRESS) console.log(`[control] Control panel: ${PAIRING_ADDRESS}/control (sign in with the password you chose when deploying)`)
+  startOrca()
+})
