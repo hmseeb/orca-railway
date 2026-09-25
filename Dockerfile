@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libxtst6 libcups2t64 libdrm2 libxkbcommon0 libpango-1.0-0 libcairo2 libatspi2.0-0t64 \
       libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libxrender1 libx11-xcb1 \
       libxcb-dri3-0 libxss1 \
-      build-essential python3 ripgrep less nano procps tini \
+      build-essential python3 ripgrep less nano procps tini qrencode \
     && rm -rf /var/lib/apt/lists/*
 
 # Node 22 for the npm-distributed agent CLIs (glibc build, copied whole).
@@ -35,10 +35,14 @@ RUN set -eux; \
 
 # Preinstalled agents. Users can `npm i -g` newer ones; the prefix below lives
 # on the volume and comes first on PATH, so updates survive redeploys.
-RUN npm install -g @anthropic-ai/claude-code @openai/codex && npm cache clean --force
+RUN npm install -g @anthropic-ai/claude-code @openai/codex @earendil-works/pi-coding-agent && npm cache clean --force
 
 RUN useradd --create-home --shell /bin/bash orca
-COPY orca-boot /usr/local/bin/orca-boot
+COPY orca-boot orca-seed /usr/local/bin/
+# Control page + proxy, used when ORCA_PASSWORD is set (the w/ Relay template).
+COPY common/web.mjs control/control.mjs /opt/orca-control/
+# Orca's clone dialog suggests /home/user/projects; make that path land on the volume.
+RUN mkdir -p /home/user && ln -s /data/home/projects /home/user/projects
 
 ENV LIBGL_ALWAYS_SOFTWARE=1 \
     PORT=6768 \

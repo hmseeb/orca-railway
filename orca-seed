@@ -1,0 +1,20 @@
+#!/bin/sh
+# First boot only: a Hello-World project registered in Orca, so a new server
+# opens with a terminal one click away. Runs as the orca user, in the background.
+set -u
+marker="$HOME/.orca-seeded"
+[ -e "$marker" ] && exit 0
+repo="$HOME/projects/hello-world"
+if [ ! -d "$repo/.git" ]; then
+  mkdir -p "$repo" && cd "$repo" && git init -q -b main &&
+  printf '# Hello, Orca\n\nThis project lives on your server at %s.\nOpen a terminal here and run `claude`, `codex` or `pi`.\n\nNew projects: Add project, then use %s/projects.\n' "$repo" "$HOME" > README.md &&
+  git add README.md && git commit -qm "Hello, Orca" || exit 0
+fi
+# The CLI appears once `orca serve` has installed it and the runtime answers.
+for _ in $(seq 1 60); do
+  if "$HOME/.local/bin/orca" repo add --path "$repo" >/dev/null 2>&1; then
+    touch "$marker"; exit 0
+  fi
+  sleep 3
+done
+echo "[orca-seed] could not register $repo in Orca; add it with Add project" >&2

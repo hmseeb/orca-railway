@@ -1,6 +1,9 @@
-name: Build image
-# Builds the Railway image to GHCR and runs the contract test against it before
-# the tag is pushed. Railway deploys are amd64, so only amd64 is built.
+name: Build images
+# Builds the orca and relay images, runs every contract test against them, and
+# pushes to GHCR only if all pass. Railway deploys are amd64, so only amd64 is built.
+#   test/smoke.sh    orca image, plain mode (Orca ADE)
+#   test/control.sh  orca image, control mode (Orca ADE w/ Relay)
+#   test/relay.sh    relay image: desktop sign-in, upstream splice smoke, admin
 on:
   push:
     branches: [main]
@@ -17,13 +20,12 @@ jobs:
       - id: v
         run: echo "version=$(sed -n 's/^ARG ORCA_VERSION=//p' Dockerfile)" >> "$GITHUB_OUTPUT"
       - uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          tags: orca-rw:local
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        with: { context: ., load: true, tags: orca-rw:local, cache-from: type=gha, cache-to: "type=gha,mode=max" }
+      - uses: docker/build-push-action@v6
+        with: { context: ., file: relay/Dockerfile, load: true, tags: orca-relay-rw:local, cache-from: "type=gha,scope=relay", cache-to: "type=gha,mode=max,scope=relay" }
       - run: ./test/smoke.sh orca-rw:local
+      - run: ./test/control.sh orca-rw:local
+      - run: ./test/relay.sh orca-relay-rw:local
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -31,6 +33,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - run: |
           for t in latest ${{ steps.v.outputs.version }}; do
-            docker tag orca-rw:local ghcr.io/hmseeb/orca-railway:$t
-            docker push ghcr.io/hmseeb/orca-railway:$t
+            docker tag orca-rw:local ghcr.io/hmseeb/orca-railway:$t && docker push ghcr.io/hmseeb/orca-railway:$t
+            docker tag orca-relay-rw:local ghcr.io/hmseeb/orca-railway-relay:$t && docker push ghcr.io/hmseeb/orca-railway-relay:$t
           done

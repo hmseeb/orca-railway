@@ -1,0 +1,48 @@
+{
+  "name": "Orca ADE (w/ Relay)",
+  "description": "Orca agent server + your own relay: Claude Code, Codex, Pi from any device",
+  "workspaceId": "fc4796db-2c6c-4354-a564-d4a1d900af53",
+  "$note": "Sibling of template.json (Orca ADE, one service). Same orca image; ORCA_PASSWORD switches it into control mode. Build/verify scripts: build_relay_source.py, relay_repair.py.",
+  "why_two_services": {
+    "$note": "orca serve never starts Orca's relay client (only desktop mode does: src/main/startup/main-process-runtime-launch.ts launchDesktopMode), and the browser web client stubs out pairing/relay/cloud sign-in (src/renderer/src/web/preload-api/web-mobile-api.ts, web-orca-profiles-api.ts). So the Railway server is reached directly over its public wss:// endpoint and cannot itself use a relay. The relay serves Orca desktop apps on the deployer's own computers, so their phones reach those computers from anywhere. Both share one password."
+  },
+  "services": {
+    "orca": {
+      "image": "ghcr.io/hmseeb/orca-railway:<version>",
+      "mode": "control (ORCA_PASSWORD set): control/control.mjs owns $PORT=8080, runs `orca serve --json` on loopback 6768, proxies HTTP+WS to it, serves /control",
+      "healthcheckPath": "/control/health",
+      "healthcheckNote": "503 until orca serve printed its ready JSON, so the deploy only goes green once Orca is really up. No hyphen in the path (Railway rejects hyphenated healthcheck paths).",
+      "volume": "/data",
+      "domain": { "targetPort": 8080 },
+      "variables": {
+        "PORT": "8080",
+        "ORCA_PASSWORD": "${{relay.ORCA_PASSWORD}} (single prompt lives on relay)",
+        "RELAY_URL": "https://${{relay.RAILWAY_PUBLIC_DOMAIN}}",
+        "GIT_USER_NAME": "optional prompt",
+        "GIT_USER_EMAIL": "optional prompt",
+        "GH_TOKEN": "optional prompt; gh reads it natively, orca-boot runs gh auth setup-git so git push works too"
+      },
+      "control_page": {
+        "$note": "Pairing offers are minted only at orca serve startup (no RPC). Rotate/revoke therefore stop Orca, edit ~/.config/orca/orca-devices.json (lowercase 'orca', verified), and restart; the ready JSON is captured from stdout and never logged. Terminals are daemon-backed, so agents survive the restart (to verify live)."
+      }
+    },
+    "relay": {
+      "image": "ghcr.io/hmseeb/orca-railway-relay:<version>",
+      "mode": "relay/front.mjs owns $PORT=8080: /admin, /v1/desktop/auth/* (sign-in shim), /.well-known/jwks.json; everything else proxied to upstream's relay (combined role, SQLite) on loopback 8081, which it supervises",
+      "healthcheckPath": "/health",
+      "volume": "/data (relay/ sqlite, auth/ signing key, assignment key, hosts.json)",
+      "domain": { "targetPort": 8080 },
+      "variables": {
+        "PORT": "8080",
+        "ORCA_PASSWORD": "required prompt, no default: the deployer must know it to use /control and /admin and to sign computers in",
+        "ORCA_URL": "https://${{orca.RAILWAY_PUBLIC_DOMAIN}}"
+      },
+      "keys": "Signing key (ES256) and assignment key are generated on first boot onto the volume, not template variables, so nothing secret is in the template config. Rotating the signing key from /admin signs every computer out."
+    }
+  },
+  "not_possible_upstream": [
+    "Relay pairing from the web UI (stubbed out in the browser build).",
+    "Start/stop multiple relays: one relay serves unlimited computers; there is nothing to gain.",
+    "Rotating a relay 'pairing code': relay invites are minted by each Orca desktop, not by the relay."
+  ]
+}

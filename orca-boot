@@ -3,20 +3,47 @@
 # (upstream runs non-root so Chromium's sandbox and agent CLIs behave).
 set -eu
 home="${ORCA_HOME:-/data/home}"
-mkdir -p "$home/.npm-global"
+mkdir -p "$home/.npm-global" "$home/projects"
 [ "$(stat -c %U "$home")" = orca ] || chown -R orca:orca "$home"
+
+# exec_orca replaces this shell (tini's child) with the command, as `orca`.
+exec_orca() {
+  exec setpriv --reuid=orca --regid=orca --init-groups \
+    env HOME="$home" USER=orca LOGNAME=orca \
+        NPM_CONFIG_PREFIX="$home/.npm-global" \
+        PATH="$home/.npm-global/bin:$home/.local/bin:$PATH" \
+    "$@"
+}
+as_orca() {
+  setpriv --reuid=orca --regid=orca --init-groups \
+    env HOME="$home" USER=orca LOGNAME=orca \
+        NPM_CONFIG_PREFIX="$home/.npm-global" \
+        PATH="$home/.npm-global/bin:$home/.local/bin:$PATH" \
+    "$@"
+}
+
+# Git identity: deploy-form values win; otherwise a placeholder, because Orca
+# refuses to create a project without one and a fresh server has no terminal yet.
+if [ -n "${GIT_USER_NAME:-}" ]; then as_orca git config --global user.name "$GIT_USER_NAME"
+elif ! as_orca git config --global user.name >/dev/null; then as_orca git config --global user.name "Orca"; fi
+if [ -n "${GIT_USER_EMAIL:-}" ]; then as_orca git config --global user.email "$GIT_USER_EMAIL"
+elif ! as_orca git config --global user.email >/dev/null; then as_orca git config --global user.email "orca@localhost"; fi
+# gh reads GH_TOKEN itself; this also lets plain `git push` use it.
+[ -n "${GH_TOKEN:-}" ] && as_orca gh auth setup-git >/dev/null 2>&1 || true
+
+cd "$home"
+as_orca /usr/local/bin/orca-seed &
+
+# ORCA_PASSWORD set (Orca ADE w/ Relay): the control page owns $PORT and runs
+# Orca behind it. Otherwise (Orca ADE): Orca owns $PORT directly.
+if [ -n "${ORCA_PASSWORD:-}" ]; then
+  exec_orca node /opt/orca-control/control.mjs
+fi
 
 # Advertise the public URL as a full https:// URL: Orca normalizes it to wss://
 # and keeps the port implicit (443), which is what Railway's edge serves.
 addr="${ORCA_PAIRING_ADDRESS:-}"
 [ -z "$addr" ] && [ -n "${RAILWAY_PUBLIC_DOMAIN:-}" ] && addr="https://$RAILWAY_PUBLIC_DOMAIN"
-
 set -- /opt/orca/squashfs-root/AppRun serve --port "${PORT:-6768}"
 [ -n "$addr" ] && set -- "$@" --pairing-address "$addr"
-
-cd "$home"
-exec setpriv --reuid=orca --regid=orca --init-groups \
-  env HOME="$home" USER=orca LOGNAME=orca \
-      NPM_CONFIG_PREFIX="$home/.npm-global" \
-      PATH="$home/.npm-global/bin:$home/.local/bin:$PATH" \
-  "$@" ${ORCA_EXTRA_ARGS:-}
+exec_orca "$@" ${ORCA_EXTRA_ARGS:-}

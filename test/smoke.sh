@@ -24,6 +24,6 @@ code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:16768/)"
 curl -s http://127.0.0.1:16768/ | grep -qi "<html" || { echo "FAIL: / is not html"; exit 1; }
 user="$(docker exec "$name" ps -o user= -C orca-ide | sort -u | tr -d ' \n')"
 [ "$user" = orca ] || { echo "FAIL: orca-ide runs as '$user'"; exit 1; }
-docker exec "$name" setpriv --reuid=orca --regid=orca --init-groups sh -c 'for c in claude codex git gh node; do command -v $c || exit 1; done' >/dev/null \
+docker exec "$name" setpriv --reuid=orca --regid=orca --init-groups sh -c 'for c in claude codex pi git gh node; do command -v $c || exit 1; done' >/dev/null \
   || { echo "FAIL: agent CLIs missing"; exit 1; }
 echo PASS
