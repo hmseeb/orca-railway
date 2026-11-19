@@ -8,28 +8,36 @@ RUN apk add --no-cache git && mkdir /orca && cd /orca && git init -q \
  && git sparse-checkout set cloud \
  && git fetch -q --depth 1 --filter=blob:none origin "$ORCA_COMMIT" && git checkout -q FETCH_HEAD
 
-FROM node:24-alpine AS build
+FROM node:24.22.2-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85 AS build
 WORKDIR /app
-RUN corepack enable
+ENV PATH="/opt/pnpm/node_modules/.bin:$PATH"
 COPY --from=src /orca/cloud/package.json /orca/cloud/pnpm-lock.yaml /orca/cloud/pnpm-workspace.yaml /orca/cloud/tsconfig.base.json ./
+COPY --from=src /orca/cloud/patches patches
+RUN npm install --prefix /opt/pnpm --ignore-scripts --no-audit --no-fund "$(node -p 'require("./package.json").packageManager.split("+")[0]')" \
+  && npm audit signatures --prefix /opt/pnpm
 COPY --from=src /orca/cloud/packages/relay-contract packages/relay-contract
 COPY --from=src /orca/cloud/packages/postgres-schema packages/postgres-schema
 COPY --from=src /orca/cloud/apps/relay apps/relay
 RUN pnpm install --frozen-lockfile --filter @orca-cloud/relay... \
  && pnpm --filter @orca-cloud/postgres-schema build && pnpm --filter @orca-cloud/relay-contract build && pnpm --filter @orca-cloud/relay build
 
-FROM node:24-alpine
+FROM node:24.22.2-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
 WORKDIR /app
-RUN corepack enable && apk add --no-cache su-exec
-ENV NODE_ENV=production PORT=8080 ORCA_RELAY_DATA_DIR=/data/relay AUTH_DATA_DIR=/data/auth
+# Pull Alpine security fixes published after the base image was built.
+RUN apk upgrade --no-cache && apk add --no-cache su-exec
+COPY --from=build /opt/pnpm /opt/pnpm
+ENV PATH="/opt/pnpm/node_modules/.bin:$PATH" \
+    NODE_ENV=production PORT=8080 ORCA_RELAY_DATA_DIR=/data/relay AUTH_DATA_DIR=/data/auth
 COPY --from=src /orca/cloud/package.json /orca/cloud/pnpm-lock.yaml /orca/cloud/pnpm-workspace.yaml ./
+COPY --from=src /orca/cloud/patches patches
 COPY --from=build /app/packages/relay-contract/package.json packages/relay-contract/package.json
 COPY --from=build /app/packages/postgres-schema/package.json packages/postgres-schema/package.json
 COPY --from=build /app/apps/relay/package.json apps/relay/package.json
 COPY --from=build /app/packages/relay-contract/dist packages/relay-contract/dist
 COPY --from=build /app/packages/postgres-schema/dist packages/postgres-schema/dist
 COPY --from=build /app/apps/relay/dist apps/relay/dist
-RUN pnpm install --prod --frozen-lockfile --filter @orca-cloud/relay...
+RUN pnpm install --prod --frozen-lockfile --filter @orca-cloud/relay... \
+  && rm -rf patches /opt/pnpm /root/.cache /root/.local
 EXPOSE 8080
 COPY common/web.mjs relay/front.mjs ./
 # Railway volumes mount root-owned; upstream runs as `node`. front.mjs serves
