@@ -33,7 +33,8 @@ u() { docker exec -u orca -e HOME=/data/home "$name" sh -c "$1"; }
 [ "$(u 'git config --global user.name')" = "Test User" ] || fail "git identity"; ok "git identity from form"
 u 'git config --global user.email' >/dev/null || fail "git email default"; ok "git email default"
 for _ in $(seq 1 40); do u 'test -e ~/.orca-seeded' && break; sleep 3; done
-u '~/.local/bin/orca repo list' 2>/dev/null | grep -q hello-world || fail "hello-world not registered"; ok "hello-world registered"
+u 'command -v orca-ide' >/dev/null || fail "orca-ide CLI not on PATH"; ok "orca-ide CLI on PATH"
+u 'orca-ide repo list' 2>/dev/null | grep -q hello-world || { u 'orca-ide repo list' 2>&1 | tail -5; fail "hello-world not registered"; }; ok "hello-world registered"
 u 'for c in claude codex pi gh git node; do command -v $c >/dev/null || exit 1; done' || fail "CLIs"; ok "claude codex pi gh present"
 docker exec "$name" test -d /home/user/projects/ || fail "/home/user/projects"; ok "/home/user/projects lands on the volume"
 n=$(docker exec -u orca "$name" sh -c 'p=$(pgrep -f "orca-ide.*serve" | head -1); tr "\0" "\n" < /proc/$p/environ | grep -c ORCA_PASSWORD' || true)

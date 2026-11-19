@@ -25,13 +25,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Node 22 for the npm-distributed agent CLIs (glibc build, copied whole).
 COPY --from=node /usr/local /usr/local
 
+# orca-ide: the CLI. Since orcad became the serve runtime, serve no longer
+# writes ~/.local/bin/orca on an extracted AppImage, so it goes on PATH here.
 RUN set -eux; \
     case "$TARGETARCH" in arm64) asset=orca-linux-arm64.AppImage ;; *) asset=orca-linux.AppImage ;; esac; \
     mkdir -p /opt/orca && cd /opt/orca; \
     curl -fsSL -o orca.AppImage "https://github.com/stablyai/orca/releases/download/v${ORCA_VERSION}/${asset}"; \
     chmod +x orca.AppImage && ./orca.AppImage --appimage-extract >/dev/null && rm orca.AppImage; \
     chmod -R a+rX squashfs-root; \
-    echo "$ORCA_VERSION" > /opt/orca/VERSION
+    echo "$ORCA_VERSION" > /opt/orca/VERSION; \
+    test -x squashfs-root/resources/bin/orca-ide && ln -s /opt/orca/squashfs-root/resources/bin/orca-ide /usr/local/bin/orca-ide
 
 # Preinstalled agents. Users can `npm i -g` newer ones; the prefix below lives
 # on the volume and comes first on PATH, so updates survive redeploys.

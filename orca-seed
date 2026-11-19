@@ -10,9 +10,9 @@ if [ ! -d "$repo/.git" ]; then
   printf '# Hello, Orca\n\nThis project lives on your server at %s.\nOpen a terminal here and run `claude`, `codex` or `pi`.\n\nNew projects: Add project, then use %s/projects.\n' "$repo" "$HOME" > README.md &&
   git add README.md && git commit -qm "Hello, Orca" || exit 0
 fi
-# The CLI appears once `orca serve` has installed it and the runtime answers.
+# orca-ide is on PATH (image); retry until the runtime answers.
 for _ in $(seq 1 60); do
-  if "$HOME/.local/bin/orca" repo add --path "$repo" >/dev/null 2>&1; then
+  if orca-ide repo add --path "$repo" >/dev/null 2>&1; then
     touch "$marker"; exit 0
   fi
   sleep 3
