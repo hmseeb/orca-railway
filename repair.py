@@ -10,7 +10,7 @@ TEMPLATE_ID = "8229a738-6b5c-420a-8f88-f2dfe1831f66"
 WORKSPACE = "fc4796db-2c6c-4354-a564-d4a1d900af53"  # Auromations
 NAME = "Orca ADE"
 SERVICE = "9a0af3ad-15c6-4a55-ae7e-c9d7756401ea"
-IMAGE = f"ghcr.io/hmseeb/orca-railway:{sys.argv[1] if len(sys.argv) > 1 else '1.4.210'}"
+IMAGE = f"ghcr.io/hmseeb/orca-railway:{sys.argv[1] if len(sys.argv) > 1 else '1.4.264'}"
 
 
 def var(default, description, optional=False):

@@ -7,8 +7,8 @@
   "icon": "https://raw.githubusercontent.com/stablyai/orca/98584332a31acc0c0d60115edf03486068a35987/resources/icon.png",
   "upstream": {
     "repository": "https://github.com/stablyai/orca",
-    "version": "v1.4.210",
-    "commit": "98584332a31acc0c0d60115edf03486068a35987",
+    "version": "v1.4.264",
+    "commit": "686bbb9c28edeccc652f2f345be92bdb7dfc3976",
     "$note": "Upstream ships desktop packages only (AppImage/deb/rpm/dmg/exe), no server image. Its documented headless path is `orca serve` from the extracted AppImage (docs/reference/headless-linux-server.md), which is what the image wraps."
   },
   "positioning": {
@@ -22,7 +22,7 @@
   },
   "services": {
     "orca": {
-      "image": "ghcr.io/hmseeb/orca-railway:1.4.210",
+      "image": "ghcr.io/hmseeb/orca-railway:1.4.264",
       "build": "Dockerfile in this repo, built + smoke-tested + pushed by .github/workflows/image.yml (amd64 only; Railway is amd64)",
       "startCommand": null,
       "startCommandNote": "Deliberately unset. Railway execs a start command raw and discards ENTRYPOINT; the image relies on tini (PID 1, reaps agent/PTY children) and orca-boot (chowns the root-owned volume, drops to the non-root orca user via setpriv, derives the pairing address).",

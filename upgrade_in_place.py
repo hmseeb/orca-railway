@@ -9,7 +9,7 @@ sys.path.insert(0, str(pathlib.Path("~/.claude/skills/create-template-for-railwa
 import rw  # noqa: E402
 
 pid, env, orca, domain_id, orca_domain = sys.argv[1:6]
-tag = sys.argv[6] if len(sys.argv) > 6 else "1.4.210"
+tag = sys.argv[6] if len(sys.argv) > 6 else "1.4.264"
 q = rw.gql
 password = secrets.token_urlsafe(15)
 subprocess.run(["security", "add-generic-password", "-U", "-s", "orca-server", "-a", "password", "-w", password], check=True)
