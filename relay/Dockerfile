@@ -2,7 +2,7 @@
 # Build steps are upstream's apps/relay/Dockerfile verbatim; only the source
 # fetch and the volume-ownership entrypoint are ours.
 FROM node:24-alpine AS src
-ARG ORCA_COMMIT=98584332a31acc0c0d60115edf03486068a35987
+ARG ORCA_COMMIT=686bbb9c28edeccc652f2f345be92bdb7dfc3976
 RUN apk add --no-cache git && mkdir /orca && cd /orca && git init -q \
  && git remote add origin https://github.com/stablyai/orca \
  && git sparse-checkout set cloud \
