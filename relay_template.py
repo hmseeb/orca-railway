@@ -12,7 +12,7 @@ ORCA = "884f3630-bb88-450b-a5d4-fbdcdcb6829b"
 RELAY = "36e37aca-5666-4601-b334-879c5d07b95c"
 WORKSPACE = "fc4796db-2c6c-4354-a564-d4a1d900af53"  # Auromations
 NAME = "Orca ADE (w/ Relay)"
-TAG = sys.argv[1] if len(sys.argv) > 1 else "1.4.264"
+TAG = sys.argv[1] if len(sys.argv) > 1 else "1.4.277"
 
 
 def var(default, description, optional=False):

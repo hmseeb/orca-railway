@@ -5,7 +5,7 @@
 FROM node:22-bookworm-slim AS node
 
 FROM ubuntu:24.04
-ARG ORCA_VERSION=1.4.264
+ARG ORCA_VERSION=1.4.277
 ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
 

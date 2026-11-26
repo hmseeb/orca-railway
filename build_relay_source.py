@@ -7,7 +7,7 @@ sys.path.insert(0, str(pathlib.Path("~/.claude/skills/create-template-for-railwa
 import rw  # noqa: E402
 
 WORKSPACE = "fc4796db-2c6c-4354-a564-d4a1d900af53"  # Auromations
-TAG = sys.argv[1] if len(sys.argv) > 1 else "1.4.264"
+TAG = sys.argv[1] if len(sys.argv) > 1 else "1.4.277"
 q = rw.gql
 password = secrets.token_urlsafe(15)
 subprocess.run(["security", "add-generic-password", "-U", "-s", "orca-relay-source", "-a", "owner", "-w", password], check=True)
