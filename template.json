@@ -9,7 +9,8 @@
     "repository": "https://github.com/stablyai/orca",
     "version": "v1.4.277",
     "commit": "1c61fb73e5ddbacbe1465d2e0506483f57017c5f",
-    "$note": "Upstream ships desktop packages only (AppImage/deb/rpm/dmg/exe), no server image. Its documented headless path is `orca serve` from the extracted AppImage (docs/reference/headless-linux-server.md), which is what the image wraps."
+    "$note": "Upstream ships desktop packages only (AppImage/deb/rpm/dmg/exe), no server image. Its documented headless path is `orca serve` from the extracted AppImage (docs/reference/headless-linux-server.md), which is what the image wraps.",
+    "verified": "2026-11-26, v1.4.277: stranger templateDeployV2 of both orca-ade and orca-ade-w-relay (published config, tags 1.4.277) into My Projects; all services SUCCESS. Control panel: health, / -> /control, wrong password 401, login, QR, web link, web client and wss proxied. Real session: rotate -> fresh single-use web link -> paired browser lists hello-world -> terminal on the server prints 'v1.4.277 orca /data/home/projects/hello-world', the seeded commit, and Claude Code 2.1.332. Relay: test/relay-check.mjs against the live relay (desktop PKCE sign-in, relay token, upstream host+phone splice, admin list/block/sign-out-all) PASS."
   },
   "positioning": {
     "$note": "The bare slug /deploy/orca is held by Paul Zarudnev's template (0 deploys, created 2026-09-15). It builds a Dockerfile from GitHub on every deploy (slow first boot) and ships no agent CLIs, only node+npm. Ours is a prebuilt GHCR image with Claude Code, Codex, gh, git, build-essential, ripgrep preinstalled, and a documented browser-only pairing flow."
